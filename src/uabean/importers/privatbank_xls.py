@@ -1,7 +1,9 @@
 """Imports xls statements from privatbank, optained via privat24 web interface.
 
 The header is as follows:
-Дата;Час;Категорія;Картка;Опис операції;Сума в валюті картки;Валюта картки;Сума в валюті транзакції;Валюта транзакції;Залишок на кінець періоду;Валюта залишку
+Дата;Категорія;Картка;Опис операції;Сума в валюті картки;Валюта картки;Сума в валюті транзакції;Валюта транзакції;Залишок на кінець періоду;Валюта залишку
+
+Note: Date column contains combined date and time in format "DD.MM.YYYY HH:MM:SS"
 """
 
 import datetime
@@ -23,16 +25,15 @@ class Importer(IdentifyMixin, beangulp.Importer):
     ]
     unknown_account = "Assets:Unknown"
     DATE_COL = 0
-    TIME_COL = 1
-    CATEGORY_COL = 2
-    CARD_COL = 3
-    DESCRIPTION_COL = 4
-    CARD_CURRENCY_AMOUNT_COL = 5
-    CARD_CURRENCY_COL = 6
-    TRANSACTION_AMOUNT_COL = 7
-    TRANSACTION_CURRENCY_COL = 8
-    BALANCE_COL = 9
-    BALANCE_CURRENCY_COL = 10
+    CATEGORY_COL = 1
+    CARD_COL = 2
+    DESCRIPTION_COL = 3
+    CARD_CURRENCY_AMOUNT_COL = 4
+    CARD_CURRENCY_COL = 5
+    TRANSACTION_AMOUNT_COL = 6
+    TRANSACTION_CURRENCY_COL = 7
+    BALANCE_COL = 8
+    BALANCE_CURRENCY_COL = 9
     CURRENCY_MAP = {"грн": "UAH", "дол": "USD", "євро": "EUR", "PLN": "PLN"}
 
     def __init__(
@@ -47,7 +48,9 @@ class Importer(IdentifyMixin, beangulp.Importer):
         super().__init__(*args, **kwargs)
 
     def date_from_row(self, row):
-        return dateutil.parser.parse(row[self.DATE_COL].value, dayfirst=True)
+        # Parse combined date/time format like "23.07.2025 00:37:19"
+        datetime_str = row[self.DATE_COL].value
+        return dateutil.parser.parse(datetime_str, dayfirst=True)
 
     @classmethod
     def get_currency(cls, cell):
@@ -94,7 +97,8 @@ class Importer(IdentifyMixin, beangulp.Importer):
 
     def entry_from_row(self, meta, row):
         dt = self.date_from_row(row)
-        meta["time"] = row[self.TIME_COL].value
+        # Extract time from the datetime for metadata
+        meta["time"] = dt.strftime("%H:%M:%S")
         meta["category"] = row[self.CATEGORY_COL].value
         account = self.card_to_account_map.get(
             row[self.CARD_COL].value, self.unknown_account
