@@ -136,6 +136,7 @@ def get_test_importer():
         {
             "1234": "Assets:Privatbank:Universal",
             "5678": "Assets:Privatbank:Social",
+            "8345 **** **** 2284": "Assets:Privatbank:Test",
         }
     )
 
